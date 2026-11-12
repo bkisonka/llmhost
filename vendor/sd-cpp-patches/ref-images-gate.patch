@@ -1,0 +1,93 @@
+diff --git a/examples/server/routes_openai.cpp b/examples/server/routes_openai.cpp
+index f721e14..4ca1b91 100644
+--- a/examples/server/routes_openai.cpp
++++ b/examples/server/routes_openai.cpp
+@@ -1,5 +1,7 @@
+ #include "routes.h"
+ 
++#include "model_catalog.h" // llmhost-local patch: model_generation_features for the ref_images gate
++
+ #include <algorithm>
+ #include <ctime>
+ #include <regex>
+@@ -334,6 +336,19 @@ void register_openai_api_endpoints(httplib::Server& svr, ServerRuntime& rt) {
+                 return;
+             }
+ 
++            // llmhost-local patch (2026-11-09): a model without the
++            // ref_images feature must refuse edit requests with an honest
++            // 400. Upstream built the refs unchecked and died on GGML_ASSERT
++            // (z_image.hpp:808), killing the whole server for every client.
++            // The feature table is the engine's own contract: ref_images
++            // defaults to false and is enabled only by the recipe.
++            if (!model_generation_features(*runtime).value("ref_images", false)) {
++                res.status = 400;
++                res.set_content(json({{"error", "model does not support ref_images — the edit request requires a model whose recipe declares the ref_images feature"}}).dump(),
++                                "application/json");
++                return;
++            }
++
+             ImgGenJobRequest request;
+             std::string error_message;
+             if (!build_openai_edit_request(req, *runtime, request, error_message)) {
+diff --git a/examples/server/routes_sdapi.cpp b/examples/server/routes_sdapi.cpp
+index 0d37898..68c2fe6 100644
+--- a/examples/server/routes_sdapi.cpp
++++ b/examples/server/routes_sdapi.cpp
+@@ -435,6 +435,14 @@ static bool build_sdapi_img_gen_request(const json& j,
+         }
+     }
+ 
++    // llmhost-local patch (2026-11-09): refuse reference images on models
++    // without the ref_images feature. Upstream pushed the refs unchecked and
++    // died on GGML_ASSERT (z_image.hpp:808), killing the whole server.
++    if (j.contains("extra_images") && j["extra_images"].is_array() &&
++        !model_generation_features(runtime).value("ref_images", false)) {
++        error_message = "model does not support ref_images — img2img with extra_images requires a model whose recipe declares the ref_images feature";
++        return false;
++    }
+     if (j.contains("extra_images") && j["extra_images"].is_array()) {
+         for (const auto& extra_image : j["extra_images"]) {
+             if (!extra_image.is_string()) {
+diff --git a/src/model/diffusion/z_image.hpp b/src/model/diffusion/z_image.hpp
+index bc9ddc4..5bde2c0 100644
+--- a/src/model/diffusion/z_image.hpp
++++ b/src/model/diffusion/z_image.hpp
+@@ -805,7 +805,17 @@ namespace ZImage {
+                 img                 = ggml_concat(ctx->ggml_ctx, img, img_pad_tokens, 1);  // [N, n_img_token + n_img_pad_token, hidden_size]
+             }
+ 
+-            GGML_ASSERT(txt->ne[1] + img->ne[1] == pe->ne[3]);
++            // llmhost-local patch (2026-11-09): this model's PE table does not
++            // account for reference-image tokens — a mismatch here used to be a
++            // GGML_ASSERT that aborted the whole server (all clients die, not
++            // just this request). Report it as a per-request failure instead.
++            if (txt->ne[1] + img->ne[1] != pe->ne[3]) {
++                throw std::runtime_error(
++                    "z_image: reference images are not supported for this model/size "
++                    "(text+image tokens do not match the positional embedding table; "
++                    "txt=" + std::to_string(txt->ne[1]) + " + img=" +
++                    std::to_string(img->ne[1]) + " != pe=" + std::to_string(pe->ne[3]) + ")");
++            }
+ 
+             auto txt_pe = ggml_ext_slice(ctx->ggml_ctx, pe, 3, 0, txt->ne[1]);
+             auto img_pe = ggml_ext_slice(ctx->ggml_ctx, pe, 3, txt->ne[1], pe->ne[3]);
+diff --git a/src/stable-diffusion.cpp b/src/stable-diffusion.cpp
+index 436328d..8c2c481 100644
+--- a/src/stable-diffusion.cpp
++++ b/src/stable-diffusion.cpp
+@@ -825,6 +825,14 @@ SD_API bool generate_image(sd_ctx_t* sd_ctx,
+     } catch (const std::exception& e) {
+         LOG_ERROR("image generation failed: %s", e.what());
+         free_sd_images(images, count);
++        // llmhost-local patch (2026-11-10): when nothing was produced, the
++        // reason must reach the API client — rethrow so the server route
++        // answers 500 with the real message instead of a generic
++        // "returned no results". Partial batches keep the old semantics
++        // (some images produced = success).
++        if (count == 0) {
++            throw;
++        }
+         return false;
+     }
+     return sd::make_image_generation_result(images, count, infos, result_out);

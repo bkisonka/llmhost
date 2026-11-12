@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "engine": "llama.cpp",
+  "release": "b11963",
+  "note": "Пребилды llama-server с GitHub Releases llama.cpp (Linux). SHA256 — digest'ы GitHub API. cuda-12.8 выбран потому, что в его arch-наборе есть родной SASS под Blackwell (sm_120a — RTX PRO 4000), а драйвер 580 (= CUDA 13.0) тянет 12.8-бинари; 13.4 может требовать более новый драйвер. Репозиторный манифест — затравка: копируется в билд-каталог только если manifest.json рядом с бинарником ещё не существует. Живой пин меняет lhctl engine update; расхождение пина с фактическим бинарником видно в /v0/engine (installed_release, mismatch).",
+  "builds": [
+    {
+      "files": [
+        {
+          "sha256": "1905cf16e22fbb6a70d56f01ee2405e7e61af77a032a3951bef38169ebb46696",
+          "size": 35471500,
+          "url": "https://github.com/ggml-org/llama.cpp/releases/download/b11963/llama-b11963-bin-ubuntu-vulkan-x64.tar.gz"
+        }
+      ],
+      "id": "vulkan"
+    },
+    {
+      "files": [
+        {
+          "sha256": "bce8d3252ce7042d2b52ae81e7674f960bde74791bb12fc8e55a29d02ef4bdfc",
+          "size": 182526908,
+          "url": "https://github.com/ggml-org/llama.cpp/releases/download/b11963/llama-b11963-bin-ubuntu-cuda-12.8-x64.tar.gz"
+        },
+        {
+          "sha256": "67bf1b64ad39a1a0e534183e25fac562419a9b3129a57ff855ed85d9d7d240a6",
+          "size": 594371567,
+          "url": "https://github.com/ggml-org/llama.cpp/releases/download/b11963/cudart-llama-b11963-bin-ubuntu-cuda-12.8-x64.tar.gz"
+        }
+      ],
+      "id": "cuda12"
+    }
+  ]
+}
