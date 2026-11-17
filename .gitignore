@@ -1,0 +1,13 @@
+build/
+.vs/
+.vscode/
+*.user
+dist/
+build-linux/
+build-linux-pkg/
+build-asan/
+build-tsan/
+build-win-x/
+._*
+.DS_Store
+__pycache__/

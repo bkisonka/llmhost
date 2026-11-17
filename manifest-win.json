@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "engine": "llama.cpp",
+  "release": "b11476",
+  "note": "Пребилды llama-server с GitHub Releases llama.cpp (Windows x64). SHA256 — digest'ы GitHub API. cuda12 = пребилд под CUDA 12.4 runtime (cudart в companion-архиве); vulkan — для карт без NVIDIA/старых драйверов, экспериментальный. Только системные каталоги при загрузке nvml.dll — DLL-подмена отсечена. Репозиторный манифест — затравка для Windows-пакета: копируется в билд-каталог, если manifest.json рядом с бинарником ещё не существует. Живой пин меняет lhctl engine update; расхождение пина с фактическим бинарником видно в /v0/engine.",
+  "builds": [
+    {
+      "id": "vulkan",
+      "files": [
+        {
+          "url": "https://github.com/ggml-org/llama.cpp/releases/download/b11476/llama-b11476-bin-win-vulkan-x64.zip",
+          "sha256": "5c71e7b749697da4a8d46e9ee55486845cbba27c9dfbecb4007f31ba6610d523",
+          "size": 33380424
+        }
+      ]
+    },
+    {
+      "id": "cuda12",
+      "files": [
+        {
+          "url": "https://github.com/ggml-org/llama.cpp/releases/download/b11476/llama-b11476-bin-win-cuda-12.4-x64.zip",
+          "sha256": "b30289b92274bb7e89200832f4bcfd9e731b716a4056d00b61440f623d4cc8e8",
+          "size": 264521953
+        },
+        {
+          "url": "https://github.com/ggml-org/llama.cpp/releases/download/b11476/cudart-llama-bin-win-cuda-12.4-x64.zip",
+          "sha256": "8c79a9b226de4b3cacfd1f83d24f962d0773be79f1e7b75c6af4ded7e32ae1d6",
+          "size": 391443627
+        }
+      ]
+    }
+  ]
+}

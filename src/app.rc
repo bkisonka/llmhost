@@ -1,0 +1,33 @@
+// rc.exe без BOM читает файл в ANSI — русские строки VERSIONINFO легли бы
+// кракозябрами (они же — заголовок тостов Windows). Прагма фиксирует UTF-8.
+#pragma code_page(65001)
+
+1 ICON "app.ico"
+
+// manifest: comctl32 v6 visual styles (RT_MANIFEST = 24)
+1 24 "app.manifest"
+
+// Версия: на неё смотрят проводник и багрепорты; синхронно с src/version.h.
+// (значения: VOS_NT_WINDOWS32 = 0x40004L, VFT_APP = 1 — rc.exe без windows.h)
+1 VERSIONINFO
+FILEVERSION     0,6,0,19
+PRODUCTVERSION  0,6,0,19
+FILEOS          0x40004L
+FILETYPE        0x1L
+BEGIN
+  BLOCK "StringFileInfo"
+  BEGIN
+    BLOCK "040904b0"
+    BEGIN
+      VALUE "ProductName",      "llmhost"
+      VALUE "FileDescription",  "llmhost — локальный хост для нейросетей"
+      VALUE "FileVersion",      "0.6.0-beta19"
+      VALUE "ProductVersion",   "0.6.0-beta19"
+      VALUE "LegalCopyright",   "Proprietary. (C) 2026 bkisonka"
+    END
+  END
+  BLOCK "VarFileInfo"
+  BEGIN
+    VALUE "Translation", 0x409, 1200
+  END
+END
